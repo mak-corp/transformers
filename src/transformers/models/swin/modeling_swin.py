@@ -735,6 +735,9 @@ class SwinStage(nn.Module):
         output_attentions: Optional[bool] = False,
     ) -> Tuple[torch.Tensor]:
         height, width = input_dimensions
+
+        all_self_attentions = () if output_attentions else None
+
         for i, layer_module in enumerate(self.blocks):
 
             layer_head_mask = head_mask[i] if head_mask is not None else None
@@ -742,6 +745,8 @@ class SwinStage(nn.Module):
             layer_outputs = layer_module(hidden_states, input_dimensions, layer_head_mask, output_attentions)
 
             hidden_states = layer_outputs[0]
+            if output_attentions:
+                all_self_attentions += layer_outputs[1:]
 
         if self.downsample is not None:
             height_downsampled, width_downsampled = (height + 1) // 2, (width + 1) // 2
@@ -753,7 +758,7 @@ class SwinStage(nn.Module):
         stage_outputs = (hidden_states, output_dimensions)
 
         if output_attentions:
-            stage_outputs += layer_outputs[1:]
+            stage_outputs += all_self_attentions
         return stage_outputs
 
 
